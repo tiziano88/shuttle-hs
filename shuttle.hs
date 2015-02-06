@@ -17,7 +17,28 @@ data Event = Event {
   value :: Int32
 } deriving (Eq, Show)
 
-scrollDown = createProcess $ proc "xdotool" ["click", "5"]
+data Action
+  = ScrollUp
+  | ScrollDown
+
+convertAction :: Action -> [String]
+convertAction ScrollUp = ["click", "5"]
+convertAction ScrollDown = ["click", "4"]
+
+performAction :: Action -> IO ()
+performAction a = let arg = convertAction a in
+  xdotool arg
+
+xdotool :: [String] -> IO ()
+xdotool arg = do
+  createProcess $ proc "xdotool" arg
+  return ()
+
+fromEvent :: Event -> Maybe Action
+fromEvent e = case code e of
+  261 -> Just ScrollUp
+  262 -> Just ScrollDown
+  _ -> Nothing
 
 deviceFile = "/dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00"
 
@@ -40,7 +61,9 @@ mainLoop h = do
   buf <- B.hGet h 24
   let e = runGet deserialize buf
   putStrLn $ show $ e
-  _ <- scrollDown
+  case fromEvent e of
+    Just a -> performAction a
+    Nothing -> return ()
   mainLoop h
 
 main :: IO ()
