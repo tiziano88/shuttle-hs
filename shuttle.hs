@@ -41,17 +41,20 @@ performAction :: Action -> IO ()
 performAction a = let arg = convertAction a in
   xdotool arg
 
+noAction :: IO ()
+noAction = return ()
+
 xdotool :: [String] -> IO ()
 xdotool arg = do
   createProcess $ proc "xdotool" arg
   return ()
 
-fromEvent :: Event -> Maybe Action
+fromEvent :: Event -> Maybe (IO ())
 fromEvent e = case etype e of
                 1 -> if value e == 1
                      then case code e of
-                            261 -> Just ScrollUp
-                            262 -> Just ScrollDown
+                            261 -> Just $ performAction ScrollUp
+                            262 -> Just $ performAction ScrollDown
                             _ -> Nothing
                      else Nothing
                 _ -> Nothing
@@ -76,8 +79,8 @@ mainLoop h = do
   let e = runGet deserialize buf
   putStrLn $ show $ e
   case fromEvent e of
-    Just a -> performAction a
-    Nothing -> return ()
+    Just a -> a
+    Nothing -> noAction
   mainLoop h
 
 main :: IO ()
