@@ -1,11 +1,9 @@
-import Control.Monad
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -fwarn-unused-imports -fwarn-unused-matches #-}
+
 import qualified Data.ByteString.Lazy as B
 import Data.Binary
 import Data.Binary.Get
 import Data.Int
-import Foreign.ForeignPtr
-import Foreign.Marshal.Array
-import Foreign.Ptr
 import System.IO
 import System.Process
 
@@ -17,13 +15,27 @@ data Event = Event {
   value :: Int32
 } deriving (Eq, Show)
 
-data Action
-  = ScrollUp
-  | ScrollDown
+data Action = ScrollUp
+            | ScrollDown
+            | Click
+
+data Button = ButtonLeft | ButtonMiddle | ButtonRight | ButtonWheelUp | ButtonWheelDown
+
+deviceFile = "/dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00"
+
+clickAction :: Button -> [String]
+clickAction b = ["click", show bb]
+  where bb = case b of
+              ButtonLeft -> 1
+              ButtonMiddle -> 2
+              ButtonRight -> 3
+              ButtonWheelUp -> 4
+              ButtonWheelDown -> 5
 
 convertAction :: Action -> [String]
-convertAction ScrollUp = ["click", "5"]
-convertAction ScrollDown = ["click", "4"]
+convertAction ScrollUp = clickAction ButtonWheelUp
+convertAction ScrollDown = clickAction ButtonWheelDown
+convertAction Click = clickAction ButtonLeft
 
 performAction :: Action -> IO ()
 performAction a = let arg = convertAction a in
@@ -35,12 +47,14 @@ xdotool arg = do
   return ()
 
 fromEvent :: Event -> Maybe Action
-fromEvent e = case code e of
-  261 -> Just ScrollUp
-  262 -> Just ScrollDown
-  _ -> Nothing
-
-deviceFile = "/dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00"
+fromEvent e = case etype e of
+                1 -> if value e == 1
+                     then case code e of
+                            261 -> Just ScrollUp
+                            262 -> Just ScrollDown
+                            _ -> Nothing
+                     else Nothing
+                _ -> Nothing
 
 deserialize :: Get Event
 deserialize = do
