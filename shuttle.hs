@@ -15,13 +15,42 @@ data Event = Event {
   value :: Int32
 } deriving (Eq, Show)
 
+data State = State {
+  jog :: Int32,
+  wheel :: Int32,
+  wheelDelta :: Int32,
+  mode :: Int32
+} deriving (Eq, Show)
+
 data Action = ScrollUp
             | ScrollDown
             | Click
 
-data Button = ButtonLeft | ButtonMiddle | ButtonRight | ButtonWheelUp | ButtonWheelDown
+data Button = ButtonLeft
+            | ButtonMiddle
+            | ButtonRight
+            | ButtonWheelUp
+            | ButtonWheelDown
+
+handleEvent :: Event -> State -> IO State
+handleEvent Event{ etype = 1, code = 260, value = 1 } s = return s{ mode = 0 }
+handleEvent Event{ etype = 1, code = 261, value = 1 } s = return s{ mode = 1 }
+handleEvent Event{ etype = 1, code = 262, value = 1 } s = return s{ mode = 2 }
+handleEvent Event{ etype = 1, code = 263, value = 1 } s = return s{ mode = 3 }
+handleEvent Event{ etype = 1, code = 264, value = 1 } s = return s{ mode = 4 }
+handleEvent Event{ etype = 2, code = 7, value = v } s = return s{ wheel = v }
+handleEvent Event{ etype = 2, code = 8, value = v } s = return s{ jog = v }
+handleEvent _ s = return s
 
 deviceFile = "/dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00"
+
+initialState :: State
+initialState = State {
+  jog = 0,
+  wheel = 0,
+  wheelDelta = 0,
+  mode = 0
+}
 
 clickAction :: Button -> [String]
 clickAction b = ["click", show bb]
@@ -53,8 +82,8 @@ fromEvent :: Event -> Maybe (IO ())
 fromEvent e = case etype e of
                 1 -> if value e == 1
                      then case code e of
-                            261 -> Just $ performAction ScrollUp
-                            262 -> Just $ performAction ScrollDown
+                            261 -> Nothing -- Just $ performAction ScrollUp
+                            262 -> Nothing -- Just $ performAction ScrollDown
                             _ -> Nothing
                      else Nothing
                 _ -> Nothing
@@ -74,17 +103,17 @@ deserialize = do
     value = fromIntegral value
   }
 
-mainLoop h = do
+mainLoop :: Handle -> State -> IO ()
+mainLoop h oldState = do
   buf <- B.hGet h 24
   let e = runGet deserialize buf
   putStrLn $ show $ e
-  case fromEvent e of
-    Just a -> a
-    Nothing -> noAction
-  mainLoop h
+  newState <- handleEvent e oldState
+  putStrLn $ show newState
+  mainLoop h newState
 
 main :: IO ()
 main = do
   handle <- openBinaryFile deviceFile ReadMode
-  mainLoop handle
+  mainLoop handle initialState
   return ()
