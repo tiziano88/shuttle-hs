@@ -5,7 +5,7 @@ import Data.Int
 import System.IO
 import System.Process
 
-data State = State {
+data State = State{
   dial :: Int32,
   wheel :: Int32,
   mode :: Int32
@@ -41,7 +41,7 @@ handleEvent _ s = return s
 deviceFile = "/dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00"
 
 initialState :: State
-initialState = State {
+initialState = State{
   dial = 0,
   wheel = 0,
   mode = 0
@@ -67,7 +67,7 @@ mainLoop h oldState = do
   case ee of
     Just e -> do
       newState <- handleEvent e oldState
-      putStrLn $ show $ e
+      putStrLn $ show e
       putStrLn $ show newState
       putStrLn "----"
       mainLoop h newState
