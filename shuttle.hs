@@ -38,9 +38,10 @@ handleEvent Event{ etype = 1, code = 262, value = 1 } s = return s{ mode = 2 }
 handleEvent Event{ etype = 1, code = 263, value = 1 } s = return s{ mode = 3 }
 handleEvent Event{ etype = 1, code = 264, value = 1 } s = return s{ mode = 4 }
 handleEvent Event{ etype = 2, code = 7, value = v } s = do
-  if v - (wheel s) > 0
-  then clickAction ButtonWheelDown
-  else clickAction ButtonWheelUp
+  case compare v (wheel s) of
+    LT -> clickAction ButtonWheelUp
+    GT -> clickAction ButtonWheelDown
+    EQ -> return ()
   return s{ wheel = v }
 handleEvent Event{ etype = 2, code = 8, value = v } s = return s{ jog = v }
 handleEvent _ s = return s
