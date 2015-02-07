@@ -50,11 +50,11 @@ initialState = State{
 clickAction :: Button -> IO ()
 clickAction b = xdotool ["click", show bb]
   where bb = case b of
-             ButtonLeft -> 1
-             ButtonMiddle -> 2
-             ButtonRight -> 3
-             ButtonWheelUp -> 4
-             ButtonWheelDown -> 5
+               ButtonLeft -> 1
+               ButtonMiddle -> 2
+               ButtonRight -> 3
+               ButtonWheelUp -> 4
+               ButtonWheelDown -> 5
 
 xdotool :: [String] -> IO ()
 xdotool arg = do
